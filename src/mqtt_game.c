@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <mosquitto.h>
+#include "mqtt_game.h"
 
 struct mosquitto *mosq;
 

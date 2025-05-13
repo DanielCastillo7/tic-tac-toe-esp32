@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mqtt_comm.h"
+#include "mqtt_game.h"
 
 char board[3][3];
 
