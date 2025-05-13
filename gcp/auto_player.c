@@ -1,46 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include "MQTTClient.h"
+#include <string.h>
+#include <mosquitto.h>
 
-#define ADDRESS     "tcp://localhost:1883"
-#define CLIENTID    "Auto_Player_C"
-#define TOPIC       "tictactoe/move"
-#define QOS         1
-#define TIMEOUT     10000L
+void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {
+    printf("Received message: %s\n", (char *)msg->payload);
+    int move = rand() % 9 + 1;
+    char buf[2];
+    sprintf(buf, "%d", move);
+    mosquitto_publish(mosq, NULL, "/game/move", strlen(buf), buf, 0, false);
+    printf("Sent move: %s\n", buf);
+}
 
 int main() {
-    MQTTClient client;
-    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-
-    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
-    if (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-        printf("Failed to connect to broker.\n");
-        exit(1);
-    }
-
-    srand(time(NULL));
-    while (1) {
-        int move = rand() % 9 + 1;
-        char message[2];
-        snprintf(message, sizeof(message), "%d", move);
-
-        MQTTClient_message pubmsg = MQTTClient_message_initializer;
-        pubmsg.payload = message;
-        pubmsg.payloadlen = strlen(message);
-        pubmsg.qos = QOS;
-        pubmsg.retained = 0;
-
-        MQTTClient_deliveryToken token;
-        MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
-        MQTTClient_waitForCompletion(client, token, TIMEOUT);
-
-        sleep(2); // Wait before sending next move
-    }
-
-    MQTTClient_disconnect(client, 10000);
-    MQTTClient_destroy(&client);
+    mosquitto_lib_init();
+    struct mosquitto *mosq = mosquitto_new("auto-player", true, NULL);
+    mosquitto_connect(mosq, "localhost", 1883, 60);
+    mosquitto_message_callback_set(mosq, on_message);
+    mosquitto_subscribe(mosq, NULL, "/game/move", 0);
+    mosquitto_loop_forever(mosq, -1, 1);
+    mosquitto_destroy(mosq);
+    mosquitto_lib_cleanup();
     return 0;
 }

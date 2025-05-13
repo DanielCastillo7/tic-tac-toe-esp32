@@ -1,11 +1,12 @@
 #!/bin/bash
 
-BROKER="localhost"  # Replace with actual broker IP/host
-TOPIC="tictactoe/move"
+TOPIC="/game/move"
+BROKER="localhost"
 
 while true; do
-    SLEEP=$((RANDOM % 3 + 1))
-    sleep $SLEEP
-    MOVE=$((RANDOM % 9 + 1))
-    mosquitto_pub -h $BROKER -t $TOPIC -m "$MOVE"
+  msg=$(mosquitto_sub -h $BROKER -t $TOPIC -C 1)
+  echo "Received: $msg"
+  move=$((RANDOM % 9 + 1))
+  mosquitto_pub -h $BROKER -t $TOPIC -m "$move"
+  echo "Bash sent move $move"
 done
